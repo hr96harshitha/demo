@@ -3,31 +3,35 @@ import { useEffect, useState } from 'react';
 
 function App() {
 
+  const [phone, setPhone] = useState('');
+  const [tracking, setTracking] = useState(false);
+  const [time, setTime] = useState('');
+
   const [location, setLocation] = useState({
     latitude: '',
     longitude: ''
   });
 
-  const [loading, setLoading] = useState(false);
-
   // ENV VARIABLES
-  const secretKey = process.env.REACT_APP_SECRET_KEY;
   const appName = process.env.REACT_APP_APP_NAME;
+  const version = process.env.REACT_APP_VERSION;
+  const enableMap = process.env.REACT_APP_ENABLE_MAP;
 
   useEffect(() => {
-    console.log("Secret Key:", secretKey);
-    console.log("App Name:", appName);
-  }, [secretKey, appName]);
 
-  const getLocation = () => {
+    const currentTime = new Date().toLocaleString();
+    setTime(currentTime);
 
-    setLoading(true);
+  }, []);
 
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported");
-      setLoading(false);
+  const startTracking = () => {
+
+    if (phone.length < 10) {
+      alert("Please enter valid phone number");
       return;
     }
+
+    setTracking(true);
 
     navigator.geolocation.getCurrentPosition(
 
@@ -38,49 +42,74 @@ function App() {
           longitude: position.coords.longitude
         });
 
-        setLoading(false);
       },
 
       (error) => {
+
         console.log(error);
-        alert("Unable to fetch location");
-        setLoading(false);
+        alert("Location permission denied");
+
       }
 
     );
   };
 
   return (
+
     <div className="container">
 
       <div className="glass-card">
 
-        <h1>📍 Live Location Tracker</h1>
+        <h1>📍 {appName}</h1>
 
-        <p className="subtitle">
-          Secure GPS Tracking App
+        <p className="version">
+          Version: {version}
         </p>
 
-        <button onClick={getLocation}>
-          {loading ? "Fetching..." : "Get Live Location"}
+        <p className="time">
+          {time}
+        </p>
+
+        <input
+          type="text"
+          placeholder="Enter Mobile Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+
+        <button onClick={startTracking}>
+          Start Live Tracking
         </button>
 
-        <div className="location-box">
+        {
+          tracking && (
 
-          <div className="info">
-            <h3>Latitude</h3>
-            <p>{location.latitude || "Not Available"}</p>
-          </div>
+            <div className="result-box">
 
-          <div className="info">
-            <h3>Longitude</h3>
-            <p>{location.longitude || "Not Available"}</p>
-          </div>
+              <div className="info">
+                <h3>Tracking Number</h3>
+                <p>{phone}</p>
+              </div>
 
-        </div>
+              <div className="info">
+                <h3>Latitude</h3>
+                <p>{location.latitude || "Loading..."}</p>
+              </div>
+
+              <div className="info">
+                <h3>Longitude</h3>
+                <p>{location.longitude || "Loading..."}</p>
+              </div>
+
+            </div>
+
+          )
+        }
 
         {
-          location.latitude && location.longitude && (
+          enableMap === "true" &&
+          location.latitude &&
+          location.longitude && (
 
             <iframe
               title="map"
@@ -97,6 +126,7 @@ function App() {
       </div>
 
     </div>
+
   );
 }
 
