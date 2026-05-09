@@ -3,13 +3,16 @@ import { useEffect, useState } from 'react';
 
 function App() {
 
+  // STATES
   const [phone, setPhone] = useState('');
   const [tracking, setTracking] = useState(false);
+  const [status, setStatus] = useState('Idle');
   const [time, setTime] = useState('');
 
   const [location, setLocation] = useState({
     latitude: '',
-    longitude: ''
+    longitude: '',
+    accuracy: ''
   });
 
   // ENV VARIABLES
@@ -17,38 +20,58 @@ function App() {
   const version = process.env.REACT_APP_VERSION;
   const enableMap = process.env.REACT_APP_ENABLE_MAP;
 
+  // LIVE CLOCK
   useEffect(() => {
 
-    const currentTime = new Date().toLocaleString();
-    setTime(currentTime);
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleString());
+    }, 1000);
+
+    return () => clearInterval(interval);
 
   }, []);
 
+  // START TRACKING
   const startTracking = () => {
 
     if (phone.length < 10) {
-      alert("Please enter valid phone number");
+      alert("Please enter valid mobile number");
       return;
     }
 
     setTracking(true);
+    setStatus("Tracking Started");
 
-    navigator.geolocation.getCurrentPosition(
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported");
+      return;
+    }
+
+    navigator.geolocation.watchPosition(
 
       (position) => {
 
         setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
+          latitude: position.coords.latitude.toFixed(6),
+          longitude: position.coords.longitude.toFixed(6),
+          accuracy: position.coords.accuracy.toFixed(2)
         });
+
+        setStatus("Live Location Active");
 
       },
 
       (error) => {
 
         console.log(error);
-        alert("Location permission denied");
+        setStatus("Permission Denied");
 
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
       }
 
     );
@@ -69,6 +92,10 @@ function App() {
         <p className="time">
           {time}
         </p>
+
+        <div className="status-box">
+          Status: {status}
+        </div>
 
         <input
           type="text"
@@ -93,12 +120,23 @@ function App() {
 
               <div className="info">
                 <h3>Latitude</h3>
-                <p>{location.latitude || "Loading..."}</p>
+                <p>{location.latitude || "Fetching..."}</p>
               </div>
 
               <div className="info">
                 <h3>Longitude</h3>
-                <p>{location.longitude || "Loading..."}</p>
+                <p>{location.longitude || "Fetching..."}</p>
+              </div>
+
+              <div className="info">
+                <h3>Accuracy</h3>
+                <p>
+                  {
+                    location.accuracy
+                    ? `${location.accuracy} meters`
+                    : "Fetching..."
+                  }
+                </p>
               </div>
 
             </div>
@@ -114,10 +152,10 @@ function App() {
             <iframe
               title="map"
               width="100%"
-              height="300"
+              height="320"
               loading="lazy"
               allowFullScreen
-              src={`https://maps.google.com/maps?q=${location.latitude},${location.longitude}&z=15&output=embed`}
+              src={`https://maps.google.com/maps?q=${location.latitude},${location.longitude}&z=17&output=embed`}
             ></iframe>
 
           )
